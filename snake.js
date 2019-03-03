@@ -323,6 +323,16 @@ class Snake{
         }
     }
 
+    hasBody (pos) {
+        if(this.head.Pos.equals(pos)) return true;
+        for(let i = 0; i < this.body.length; i++){
+            if(this.body[i].Pos.equals(pos)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     get Pos () {
         return this.head.position;
     }
@@ -338,30 +348,37 @@ class Food{
     constructor (game) {
         this.game = game;
         this.position = null;
-        this.animator = 0.6;
+        this.size = 0.6;
         this.animatorStep = 0.1;
         this.relocate();
     }
 
     relocate () {
-        this.position = new Vec2(Math.floor(Math.random() * this.game.grids.nCols), Math.floor(Math.random() * this.game.grids.nRows));
+        this.position = new Vec2(Math.floor(Math.random() * (this.game.grids.nCols - 1)), 
+                            Math.floor(Math.random() * (this.game.grids.nRows - 1)));
+        while(!this.game.isEmpty(this.position)){
+            this.position = new Vec2(Math.floor(Math.random() * (this.game.grids.nCols - 1)), 
+                                Math.floor(Math.random() * (this.game.grids.nRows - 1)));
+        }
     }
 
     draw (ctx) {
         ctx.beginPath();
         ctx.fillStyle = "#00ff00";
         let actualPos = this.game.grids.actualPosition(this.position);
-        ctx.arc(actualPos.x + 12.5, actualPos.y + 12.5, 8 * this.animator, 0, Math.PI * 2, false);
+        ctx.arc(actualPos.x + 12.5, actualPos.y + 12.5, 8 * this.size, 0, Math.PI * 2, false);
         ctx.fill();
         ctx.closePath();
     }
 
     update (deltaTime) {
-        this.animator += this.animatorStep * deltaTime; 
-        if(this.animator >= 1){
+        this.size += this.animatorStep * deltaTime; 
+        if(this.size >= 1){
             this.animatorStep = -0.1;
-        }else if(this.animator <= 0.6){
+            this.size = 1;
+        }else if(this.size <= 0.6){
             this.animatorStep = 0.1;
+            this.size = 0.6;
         }
     }
 
@@ -697,6 +714,10 @@ class Game{
     input () {
         // Update world
         this.snake.input();
+    }
+
+    isEmpty (pos) {
+        return !this.snake.hasBody(pos);
     }
 
 }
