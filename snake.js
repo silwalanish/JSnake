@@ -1,6 +1,34 @@
 let WIDTH = 800;
 let HEIGHT = 600;
 
+var Keys = [];
+
+class Input{
+
+	static KeyDown(keyCode){
+		Keys[keyCode] = true;
+	}
+
+	static KeyUp(keyCode){
+		Keys[keyCode] = false;
+	}
+	
+	static GetKey(keyCode){
+		return Keys[keyCode];
+	}
+
+}
+
+window.addEventListener("keydown", function(e){
+	Keys = Keys || [];
+	Input.KeyDown(e.keyCode);
+});
+
+window.addEventListener("keyup", function(e){
+	Keys = Keys || [];
+	Input.KeyUp(e.keyCode);
+});
+
 class Grid{
 
     constructor(width, height, gridSize){
@@ -153,27 +181,27 @@ class Head extends Node{
         ctx.closePath();
     }
 
-    update () {
+    update (deltaTime) {
         let newPos;
         if(this.direction == Head.UP){
             newPos = Vec2.add(this.position, new Vec2(0, -1));
             if(newPos.y < 0){
-                newPos.y = this.game.grids.nRows; 
+                newPos.y = this.game.grids.nRows - 1; 
             }
         }else if(this.direction == Head.DOWN){
             newPos = Vec2.add(this.position, new Vec2(0, 1));
-            if(newPos.y >= this.game.grids.nRows){
+            if(newPos.y > this.game.grids.nRows - 1){
                 newPos.y = 0; 
             }
         }else if(this.direction == Head.RIGHT){
             newPos = Vec2.add(this.position, new Vec2(1, 0));
-            if(newPos.x >= this.game.grids.nCols){
+            if(newPos.x > this.game.grids.nCols - 1){
                 newPos.x = 0; 
             }
         }else if(this.direction == Head.LEFT){
             newPos = Vec2.add(this.position, new Vec2(-1, 0));
             if(newPos.x < 0){
-                newPos.x = this.game.grids.nCols; 
+                newPos.x = this.game.grids.nCols - 1; 
             }
         }
         this.updatePos(newPos);
@@ -223,8 +251,9 @@ class Snake{
         this.game = game;
         this.length = 3;
         this.body = [];
-        this.head = new Head(new Vec2(this.game.grids.nCols / 2, this.game.grids.nRows / 2), this.game);
+        this.head = new Head(new Vec2(Math.floor(this.game.grids.nCols / 2), Math.floor(this.game.grids.nRows / 2)), this.game);
         this.time = 0;
+        this.speed = 0.5;
         this.changed = false;
         this.hasEatenItself = false;
         this.init();
@@ -258,18 +287,18 @@ class Snake{
         }
     }
 
-    input (e) {
-        let key = e.keyCode;
-        if(key == 38){
+    input () {
+        if(this.changed) return;
+        if(Input.GetKey(38)){
             // Go up
             this.changed = this.head.goUp();
-        }else if(key == 39){
+        }else if(Input.GetKey(39)){
             // Go Right
             this.changed = this.head.goRight();
-        }else if(key == 37){
+        }else if(Input.GetKey(37)){
             // Go Left
             this.changed = this.head.goLeft();
-        }else if(key == 40){
+        }else if(Input.GetKey(40)){
             // Go Down
             this.changed = this.head.goDown();
         }
@@ -277,8 +306,8 @@ class Snake{
 
     update (deltaTime) { 
         this.time += deltaTime;
-        if((this.time >= 0.5 || this.changed) && this.isAlive){
-            this.head.update();
+        if((this.time >= 0.5) && this.isAlive){
+            this.head.update(deltaTime);
 
             this.body.forEach(body => {
                 body.updatePos(body.Prev.oldPosition);
@@ -466,6 +495,7 @@ class Game{
     }
 
     showGameOver () {
+        this.removeScreen(".game-overlay");
         this.context.beginPath();
         this.context.fillStyle = "rgba(0, 0, 0, 0.6)";
         this.context.fillRect(0, 0, this.width, this.height);
@@ -506,7 +536,6 @@ class Game{
             back_btn.textContent = "Back";
             back_btn.addEventListener("click", () => {
                 this.removeScreen(".game-over");
-                this.removeScreen(".game-overlay");
                 this.removeScreen(".paused");
 
                 this.paused = true;
@@ -557,7 +586,7 @@ class Game{
 
         let play_btn = document.createElement("button");
         play_btn.classList.add("game-button", "play");
-        play_btn.textContent = "Play";
+        play_btn.textContent = "Resume";
         play_btn.addEventListener("click", () => {
             div.classList.add("hide");
             game_overlay.classList.remove("hide");
@@ -654,6 +683,7 @@ class Game{
     }
 
     update (deltaTime) {
+        this.input();
         this.food.update(deltaTime);
         this.snake.update(deltaTime);
 
@@ -664,9 +694,9 @@ class Game{
         }
     }
 
-    input (e) {
+    input () {
         // Update world
-        this.snake.input(e);
+        this.snake.input();
     }
 
 }
