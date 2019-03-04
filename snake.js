@@ -1,6 +1,33 @@
 let WIDTH = 800;
 let HEIGHT = 600;
 
+
+class ColorRGB{
+ 
+    static dectohex (v) {
+        return Math.abs(v).toString(16);
+    }
+
+    static rgbtohex(r, g, b){
+      return "#" + ColorRGB.dectohex(r) + ColorRGB.dectohex(g) + ColorRGB.dectohex(b);
+    }
+ 
+    static random () {
+      let r, g, b;
+      r = Math.round(Math.random() * 255);
+      g = Math.round(Math.random() * 255);
+      b = Math.round(Math.random() * 255);
+      return ColorRGB.rgbtohex(r, g, b);
+    }
+
+    static randomGreen (r, b) {
+        let g;
+        g = Math.round(Math.random() * 255);
+        return ColorRGB.rgbtohex(r, g, b);
+    }
+ 
+  }
+
 var Keys = [];
 
 class Input{
@@ -97,13 +124,15 @@ class Node{
         this.next = null;
         this.prev = null;
         this.game = game;
+        this.size = 12;
     }
 
     draw (ctx) {
         ctx.beginPath();
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "#02ff0d";
         let actualPos = this.game.grids.actualPosition(this.position);
-        ctx.fillRect(actualPos.x + 1, 1 + actualPos.y, this.game.grids.gridSize - 1, this.game.grids.gridSize - 1);
+        ctx.arc(actualPos.x + 12.5, actualPos.y + 12.5, this.size, 0, Math.PI * 2, false);
+        ctx.fill();
         ctx.closePath();
     }
 
@@ -112,7 +141,7 @@ class Node{
         this.position = position;
     }
 
-    update () {
+    update (deltaTime) {
         
     }
 
@@ -122,6 +151,14 @@ class Node{
 
     set Pos(pos) {
         this.position = pos;
+    }
+
+    get Size () {
+        return this.size;
+    }
+
+    set Size (val) {
+        this.size = val;
     }
 
     get Next () {
@@ -267,6 +304,8 @@ class Snake{
             node.Prev = (index != 0) ? this.body[index - 1] : this.head;
             node.Prev.Next = node;
             this.body.push(node);
+            
+            node.Size = 12 * 1 / (this.body.length + 1);
         }
     }
 
@@ -276,6 +315,12 @@ class Snake{
         node.Prev = this.body[this.body.length - 1];
         node.Prev.Next = node;
         this.body.push(node);
+        node.Size = 12 * 1 / (this.body.length + 1);
+    }
+
+    speedUp () {
+        if(this.speed >= 0.2)
+            this.speed -= 0.1;
     }
 
     draw (ctx) {
@@ -306,10 +351,13 @@ class Snake{
 
     update (deltaTime) { 
         this.time += deltaTime;
-        if((this.time >= 0.5) && this.isAlive){
+        if((this.time >= this.speed) && this.isAlive){
             this.head.update(deltaTime);
-
+            let len = this.body.length + 1;
+            let i = 1;
             this.body.forEach(body => {
+                body.Size = 12 * Math.max((len - (i++)) / len, 0.4);
+                
                 body.updatePos(body.Prev.oldPosition);
                 if(this.head.Pos.equals(body.Pos)){
                     this.hasEatenItself = true;
@@ -364,7 +412,7 @@ class Food{
 
     draw (ctx) {
         ctx.beginPath();
-        ctx.fillStyle = "#00ff00";
+        ctx.fillStyle = ColorRGB.random();
         let actualPos = this.game.grids.actualPosition(this.position);
         ctx.arc(actualPos.x + 12.5, actualPos.y + 12.5, 8 * this.size, 0, Math.PI * 2, false);
         ctx.fill();
@@ -708,6 +756,9 @@ class Game{
             this.score += 100;
             this.snake.eat();
             this.food.relocate();
+            if(this.score % 1000 === 0){
+                this.snake.speedUp();
+            }
         }
     }
 
