@@ -26,7 +26,7 @@ class ColorRGB{
         return ColorRGB.rgbtohex(r, g, b);
     }
  
-  }
+}
 
 var Keys = [];
 
@@ -474,7 +474,6 @@ class Game{
         this.snake = new Snake(this);
         this.food = new Food(game);
 
-        document.addEventListener("keyup", (e) => this.input(e));
         this.showMainMenu();
     }
 
